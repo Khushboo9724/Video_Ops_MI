@@ -40,16 +40,6 @@ async def upload_video(request: Request, response: Response, file: UploadFile = 
 async def download_video(request: Request, video_id: int, response: Response):
     try:
         video_service = VideoService()
-
-        if video_service.is_video_blocked(video_id):
-            response.status_code = HttpStatusCodeEnum.FORBIDDEN
-            return AppServices.app_response(
-                status_code=HttpStatusCodeEnum.FORBIDDEN,
-                success=False,
-                message=VideoResponseMsgEnum.VIDEO_BLOCKED_DOWNLOAD_ERROR,
-                data={}
-            )
-
         video_path = video_service.get_video_path_by_id(video_id)
 
         if not video_path:
@@ -60,6 +50,16 @@ async def download_video(request: Request, video_id: int, response: Response):
                 message=VideoResponseMsgEnum.VIDEO_NOT_FOUND_MSG,
                 data={}
             )
+
+        if video_service.is_video_blocked(video_id):
+            response.status_code = HttpStatusCodeEnum.FORBIDDEN
+            return AppServices.app_response(
+                status_code=HttpStatusCodeEnum.FORBIDDEN,
+                success=False,
+                message=VideoResponseMsgEnum.VIDEO_BLOCKED_DOWNLOAD_ERROR,
+                data={}
+            )
+
 
         headers = {
             'Content-Disposition': f'attachment; filename="{os.path.basename(video_path)}"'

@@ -15,9 +15,10 @@ user_router = APIRouter(
 
 
 @user_router.post('/register')
-async def user_register(user_dto: UserDTO):
+async def user_register(user_dto: UserDTO, response: Response):
     try:
         response_payload = user_service.user_register(req_data=user_dto)
+        response.status_code = response_payload.get("status_code")
         return response_payload
     except Exception as exception:
         AppServices.handle_exception(exception, is_raise=True)

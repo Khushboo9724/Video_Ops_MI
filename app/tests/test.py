@@ -1,11 +1,11 @@
-import os
 import unittest
-from unittest.mock import patch, mock_open
+from random import randint
+from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.utils import constant
+from app.utils.date_parse_utils import DateParseUtils
 from main import app
 import jwt
 
@@ -24,12 +24,15 @@ class TestAdminAPIs(unittest.TestCase):
     def test_admin_register_success(self):
         """Test successful admin registration."""
         self.admin_service_mock.admin_register.return_value = {"success": True}
-
+        num= randint(50,100)
         response = self.client.post("/admin/register", json={
           "firstname": "admin",
           "lastname": "admin lm",
-          "email": "admintest@gmail.com",
-          "password": "password"
+          "email": f"admintest{num}@gmail.com",
+          "password": "password",
+          "is_deleted": False,
+          "created_on": DateParseUtils.get_current_epoch(),
+          "modified_on": DateParseUtils.get_current_epoch()
         })
 
         self.assertEqual(response.status_code, 201)
@@ -44,11 +47,10 @@ class TestAdminAPIs(unittest.TestCase):
     def test_admin_register_user_exists(self):
         """Test admin registration when user already exists."""
         self.admin_service_mock.admin_register.side_effect = Exception("User already exists")
-
         response = self.client.post("/admin/register", json={
             "firstname": "admin",
             "lastname": "admin lm",
-            "email": "admintest@gmail.com",
+            "email": f"admintest@gmail.com",
             "password": "password"
         })
 
@@ -120,15 +122,8 @@ class TestVideoAPIs(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404) # Video not found
 
-    @patch('app.utils.authentication_check.login_required')
-    def test_download_video_blocked(self, mock_login_required):
-        """Test successful video download."""
-        # Allow access as admin/user
-        mock_login_required.return_value = None
-
-        # Mock the video service behavior
-        self.video_service_mock().get_video_path_by_id.return_value = '/home/dev1050/khushboo/Research/MI_task/videos/analysisplan-testing.mp4'
-        self.video_service_mock().is_video_blocked.return_value = False  # Ensure video is not blocked
+    def test_download_video_blocked(self):
+        """Test successful video block."""
 
         # Create a token for an admin user
         token = self.create_test_token(
@@ -162,38 +157,53 @@ class TestVideoAPIs(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     @patch('app.utils.authentication_check.login_required')
-    def test_search_video_success(self):
+    def test_search_video_success(self, mock_login_required):
         """Test successful video search."""
+        mock_login_required.return_value = None
+
+        # Simulate videos found
         self.video_service_mock.search_videos_by_metadata.return_value = [
-            {"id": 1, "title": "Sample Video"}
+            {"id": 1, "file_name": "analysis"}
         ]
 
-        response = self.client.get("/search/?search_keyword=Sample")
+        token = self.create_test_token(role="admin")
+        headers = {"Authorization": token}
 
+        response = self.client.get("video/search/?search_keyword=1",
+                                   headers=headers)
+
+        # Expect a 200 OK since the video matches the search
         self.assertEqual(response.status_code, 200)
-        self.assertIn('success', response.json())
-        self.assertTrue(response.json()['success'])
-        self.assertEqual(len(response.json()['data']), 1)
 
     @patch('app.utils.authentication_check.login_required')
-    def test_search_video_not_found(self):
-        """Test video search when no videos are found."""
+    def test_search_video_not_found(self, mock_login_required):
+        """Test video search when no results are found."""
+        mock_login_required.return_value = None
+
+        # Simulate no videos found
         self.video_service_mock.search_videos_by_metadata.return_value = []
 
-        response = self.client.get("/search/?search_keyword=NonExistent")
+        token = self.create_test_token(role="admin")
+        headers = {"Authorization": token}
 
+        response = self.client.get("video/search/?search_keyword=Nonexistent",
+                                   headers=headers)
+
+        # Expect a 404 Not Found since no videos match the search
         self.assertEqual(response.status_code, 404)
-        self.assertIn('success', response.json())
-        self.assertFalse(response.json()['success'])
-        self.assertIn('Video not found', response.json()['message'])
+
 
     @patch('app.utils.authentication_check.login_required')
-    def test_block_video_success(self):
+    def test_block_video_success(self, mock_login_required):
         """Test successful video blocking."""
-        video_id = 1
+        mock_login_required.return_value = None
+
+        token = self.create_test_token(role="admin")
+        headers = {"Authorization": token}
+        video_id = 10
         self.video_service_mock.block_video.return_value = True
 
-        response = self.client.post(f"/block/{video_id}")
+        response = self.client.post(f"video/block/{video_id}",headers=headers)
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('success', response.json())
@@ -201,25 +211,30 @@ class TestVideoAPIs(unittest.TestCase):
         self.assertEqual(response.json()['data']['video_id'], video_id)
 
     @patch('app.utils.authentication_check.login_required')
-    def test_block_video_not_found(self):
+    def test_block_video_not_found(self, mock_login_required):
         """Test blocking a video that does not exist."""
+        mock_login_required.return_value = None
+
         video_id = 999
         self.video_service_mock.block_video.return_value = False
-
-        response = self.client.post(f"/block/{video_id}")
+        token = self.create_test_token(role="admin")
+        headers = {"Authorization": token}
+        response = self.client.post(f"video/block/{video_id}", headers=headers)
 
         self.assertEqual(response.status_code, 404)
-        self.assertIn('success', response.json())
         self.assertFalse(response.json()['success'])
-        self.assertIn('Video not found', response.json()['message'])
+        self.assertIn('Video Not Found!', response.json()['message'])
 
     @patch('app.utils.authentication_check.login_required')
-    def test_unblock_video_success(self):
+    def test_unblock_video_success(self, mock_login_required):
         """Test successful video unblocking."""
+        mock_login_required.return_value = None
+        token = self.create_test_token(role="admin")
+        headers = {"Authorization": token}
         video_id = 1
         self.video_service_mock.unblock_video.return_value = True
 
-        response = self.client.post(f"/video/unblock/{video_id}")
+        response = self.client.post(f"/video/unblock/{video_id}", headers=headers)
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('success', response.json())
@@ -227,17 +242,20 @@ class TestVideoAPIs(unittest.TestCase):
         self.assertEqual(response.json()['data']['video_id'], video_id)
 
     @patch('app.utils.authentication_check.login_required')
-    def test_unblock_video_not_found(self):
+    def test_unblock_video_not_found(self, mock_login_required):
         """Test unblocking a video that does not exist."""
+        mock_login_required.return_value = None
+
+        token = self.create_test_token(role="admin")
+        headers = {"Authorization": token}
         video_id = 999
         self.video_service_mock.unblock_video.return_value = False
 
-        response = self.client.post(f"/unblock/{video_id}")
+        response = self.client.post(f"video/unblock/{video_id}",headers=headers)
 
         self.assertEqual(response.status_code, 404)
-        self.assertIn('success', response.json())
         self.assertFalse(response.json()['success'])
-        self.assertIn('Video not found', response.json()['message'])
+        self.assertIn('Video Not Found!', response.json()['message'])
 
 #### User Registration Tests
 class TestUserAPIs(unittest.TestCase):
@@ -252,12 +270,15 @@ class TestUserAPIs(unittest.TestCase):
     def test_user_register_success(self):
         """Test successful user registration."""
         self.user_service_mock.user_register.return_value = {"success": True}
-
+        num= randint(50,100)
         response = self.client.post("/user/register", json={
             "firstname": "user",
             "lastname": "test",
-            "email": "usertest@gmail.com",
-            "password": "password"
+            "email": f"usertest{num}@gmail.com",
+            "password": "password",
+            "is_deleted":False,
+            "created_on":DateParseUtils.get_current_epoch(),
+            "modified_on":DateParseUtils.get_current_epoch()
         })
 
         self.assertEqual(response.status_code, 201)

@@ -1,9 +1,43 @@
-# Video_Ops_MI
+Project Setup and Documentation
+This document outlines the steps to configure and run the application, including setting up database credentials, Redis configuration, and handling video operations. It also provides a detailed overview of the core features and functionality of the project.
 
-**Configuration**
-Updating the config.ini File
-Before running the project, you need to update the config.ini file with your specific configurations. 
-Follow these steps:
+Project Overview
+This application is designed to support both user and admin workflows, focusing on video management functionality. Below are the key features:
 
-update the databse credentials under the section DB_CONFIG.
-when running the project using docker update the ntwork ip in config.ini for Redis and DB_Config.
+Features
+User and Admin Registration/Login:
+
+Users and administrators must register and authenticate to access the platform.
+Video Management Operations:
+
+Video Upload: Admins can upload videos to the system via a dedicated API endpoint.
+Video Download: Users and admins can download videos from the system.
+Video Search: Admin can search by video file name or video size.
+Block Videos: Admins and Users can block specific videos by their unique video ID.
+UnBlock Videos: Admins and Users can unblock specific videos by their unique video ID.
+
+Note:
+Video upload functionality and search functionality is restricted to admins. Ensure registration and login are completed before accessing any video-related opera.
+Prerequisites
+To run the application, ensure the following tools and services are installed and available:
+
+Docker: To containerize and deploy the application.
+Docker Compose: To manage multi-container Docker applications.
+Local Network Access: For proper communication between services.
+Configuration Instructions
+1. Configure config.ini for Docker
+When running the application inside Docker containers, the configuration for the database and Redis services must be updated to use the local network IP address. This allows proper communication between Docker services and external resources.
+
+Steps:
+Locate the config.ini file in the root directory of the project.
+Update the following sections with your specific environment details:
+[database]
+db_host = <LOCAL_NETWORK_IP>    ; Replace with your machine's local network IP
+db_port = <DB_PORT>             ; Default port for the database (e.g., 3306 for MySQL)
+db_user = <DB_USERNAME>         ; Database username
+db_password = <DB_PASSWORD>     ; Database password
+db_name = <DB_NAME>             ; Database name
+
+[redis]
+redis_host = <LOCAL_NETWORK_IP> ; Replace with your machine's local network IP
+redis_port = <REDIS_PORT>       ; Default port for Redis (e.g., 6379)

@@ -16,34 +16,22 @@ login_router = APIRouter(
 
 
 @login_router.post("/login")
-async def user_login(login_dto: LoginDto):
+async def user_login(login_dto: LoginDto, response: Response):
 
     try:
-
+        logger.info(f"user_login : {login_dto.__dict__}")
         response_payload = auth_service.login_service(login_dto)
-        response = AppServices.app_response(
-            status_code=HttpStatusCodeEnum.OK,
-            message="Login Successful",
-            success=True,
-            data=response_payload
-        )
-        logger.info(f"Response for login is {response_payload}")
-        return response
+        response.status_code = response_payload.get('status_code')
+        return response_payload
     except Exception as exception:
         AppServices.handle_exception(exception, is_raise=True)
 
 
 @login_router.post("/get-refresh-token")
-async def get_refresh_token(access_token_dto: AccessTokenDto):
+async def get_refresh_token(access_token_dto: AccessTokenDto, response: Response):
     try:
         response_payload = auth_service.get_refresh_token_service(access_token_dto)
-        response = AppServices.app_response(
-            status_code=HttpStatusCodeEnum.OK,
-            message="Refresh token fetched successfully!",
-            success=True,
-            data=response_payload
-        )
-        logger.info(f"Response for new access token is {response_payload}")
-        return response
+        response.status_code = response_payload.get('status_code')
+        return response_payload
     except Exception as exception:
         AppServices.handle_exception(exception, is_raise=True)

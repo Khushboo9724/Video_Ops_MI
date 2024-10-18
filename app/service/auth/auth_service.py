@@ -44,7 +44,10 @@ def login_service(login_data):
         token_data.update(email=user_info.email)
         token_data.update(Role=user_info.role)
 
-        return token_data
+        return AppServices.app_response(HttpStatusCodeEnum.OK,
+                                        ResponseMessageEnum.LOGIN_SUCCESS,
+                                        success=True,
+                                        data=token_data)
 
     except Exception as exception:
         AppServices.handle_exception(exception, is_raise=True)
@@ -74,8 +77,6 @@ def get_refresh_token_service(request_data):
                                             ResponseMessageEnum.USER_NOT_FOUND,
                                             success=False,
                                             data={})
-        # Retrieve the role name associated with a given role ID from the database
-        # Extract user information fields, handling missing attributes gracefully
         email = getattr(user_info, 'email', None)
         access_token_payload = {
             'exp': datetime.utcnow() + timedelta(days=0,

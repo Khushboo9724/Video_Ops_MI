@@ -13,6 +13,7 @@ class HttpStatusCodeEnum(int, Enum):
 
 class ResponseMessageEnum(str, Enum):
     # Common Messages
+    LOGIN_SUCCESS = "Logged in successfully."
     HEALTH_CHECK_API_WORKING_SUCCESS_MESSAGE = "Health Check API working success."
     USER_NOT_FOUND = "User not found"
     INTERNAL_SERVER_ERROR = "Oops! Something went wrong"

@@ -17,6 +17,7 @@ admin_router = APIRouter(
 @admin_router.post('/register')
 async def admin_register(admin_dto: AdminDTO):
     try:
+        logger.info(f"admin_register : {admin_dto.__dict__}")
         response_payload = admin_service.admin_register(req_data=admin_dto)
         return response_payload
     except Exception as exception:

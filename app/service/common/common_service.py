@@ -8,20 +8,18 @@ from app.custom_enum.http_enum import HttpStatusCodeEnum, ResponseMessageEnum
 logger = MyLogger.get_logger(__name__)
 
 
-from fastapi.responses import JSONResponse
-
 class AppServices:
     @staticmethod
-    def app_response(status_code, message, success, data=None):
-        return JSONResponse(
-            content={
-                "status_code":status_code,
-                "message": message,
-                "success": success,
-                "data": data
-            },
-            status_code=status_code
-        )
+    def app_response(status_code: int, message: str, success: bool = None,
+                     data: any = None) -> dict:
+        response = {
+            "status_code": status_code,
+            "success": success,
+            "message": message,
+            "data": data
+        }
+
+        return response
 
     @staticmethod
     def handle_exception(exception, is_raise=False):
@@ -42,4 +40,4 @@ class AppServices:
         if is_raise:
             raise HTTPException(status_code=exception.status_code if hasattr(exception, "status_code") else
                                 HttpStatusCodeEnum.INTERNAL_SERVER_ERROR,
-                                detail=ResponseMessageEnum.INTERNAL_SERVER_ERROR)
+                                detail=exception.detail if hasattr(exception, "detail") else ResponseMessageEnum.INTERNAL_SERVER_ERROR)

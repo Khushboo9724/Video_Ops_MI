@@ -1,0 +1,41 @@
+version: "3.7"
+services:
+  mysql-db:
+    container_name: mysql-db
+    image: mysql:5.7
+    restart: always
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: MI_task
+      MYSQL_USER: demo
+      MYSQL_PASSWORD: root
+
+  redis-db:
+    image: "redis:latest"
+    container_name: redis-db
+    ports:
+      - "6369:6379"
+    volumes:
+      - redis-data:/data
+
+  fast-api:
+    container_name: fast-api
+    build: .
+    restart: always
+    depends_on:
+      - mysql-db
+      - redis-db
+    ports:
+      - 8000:8000
+
+    volumes:
+      - ./videos:/mi_task/videos
+
+volumes:
+  redis-data:
+  mysql-data:
